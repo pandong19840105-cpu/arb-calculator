@@ -84,8 +84,29 @@
   .vv{font-size:13px; font-weight:900; font-family:var(--fn); color:var(--ink2)}
   .concl{text-align:center; font-size:12.5px; font-weight:700; color:var(--ink2)}
 
-  @media (max-width:430px){ .margin{font-size:44px} .verdict{font-size:22px} }
-  @media (max-width:360px){ .margin{font-size:38px} .verdict{font-size:20px} }
+  @media (max-width:520px){
+    body{padding:16px 12px 24px}
+    .card{gap:18px; padding:18px}
+    .hero{padding:22px 20px}
+    .hlab{font-size:10.5px}
+    .margin{font-size:clamp(42px,13.5vw,54px)}
+    .verdict{font-size:clamp(23px,6.6vw,27px)}
+    .lock{font-size:17px; padding:13px 15px; margin-top:16px}
+    .k{font-size:10px}
+    .odds{height:54px; font-size:33px}
+    .stake{font-size:37px}
+    .body{padding:15px 15px 18px; gap:10px}
+    .band{padding:11px 14px}
+    .band b{font-size:15.5px}
+    .pill{padding:14px 30px; min-width:280px}
+    .pill input{font-size:26px}
+    .hint{font-size:10px}
+    .verify{padding-top:16px; gap:12px}
+    .vk{font-size:10px}
+    .vv{font-size:15px}
+    .concl{font-size:14.5px}
+  }
+  @media (max-width:360px){ .margin{font-size:40px} .verdict{font-size:21px} }
 </style>
 
 <main class="card" role="main">
