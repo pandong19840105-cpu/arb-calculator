@@ -71,11 +71,15 @@
   .unit{font-size:14px; font-weight:800; color:var(--cap3); flex-shrink:0}
   .recbtn{align-self:flex-start; margin-top:3px; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:#0a828c; background:none; border:0; padding:0; cursor:pointer; font-family:var(--fd)}
 
-  .totalWrap{text-align:center}
+  .totalWrap{display:flex; align-items:center; gap:10px}
+  .totalWrap .pill{flex:1; min-width:0}
   .pill{display:inline-flex; align-items:center; justify-content:center; gap:12px; background:#fff; border-radius:14px; padding:9px 32px; min-width:260px; max-width:100%; box-shadow:0 4px 12px -8px rgba(60,48,24,.3); border:1px solid rgba(45,38,24,.05)}
   .pill .k{color:var(--cap2)}
   .pill input{width:112px; font-size:22px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums; background:transparent; border:0; text-align:center; color:var(--ink); outline:0}
   .pill .yuan{font-size:13px; font-weight:800; color:var(--cap3)}
+  .lockAmt{flex-shrink:0; white-space:nowrap; border-radius:12px; padding:9px 14px; font-size:14px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums}
+  .lockAmt.ok{background:rgba(10,130,140,.12); color:#0a828c}
+  .lockAmt.no{background:rgba(194,42,24,.12); color:#c22a18}
 
   .hint{text-align:center; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--cap); padding:0 6px; line-height:1.5}
 
@@ -105,6 +109,7 @@
     .band b{font-size:15.5px}
     .pill{padding:14px 30px; min-width:280px}
     .pill input{font-size:26px; width:132px}
+    .lockAmt{font-size:15px; padding:11px 14px}
     .hint{font-size:10px}
     .verify{padding-top:16px; gap:12px}
     .vk{font-size:10px}
@@ -156,6 +161,7 @@
 
   <div class="totalWrap">
     <label class="pill"><span class="k">总投注</span><input id="total" inputmode="numeric" step="10" value="2000" class="num" aria-label="总投注额"><span class="yuan">元</span></label>
+    <div class="lockAmt" id="lockAmt"></div>
   </div>
 
   <div class="hint" id="hint">两边加起来 = 总额 2000 · 两边都填欧赔,皇冠港赔记得 +1</div>
@@ -173,6 +179,7 @@
 <script>
   var $=function(id){return document.getElementById(id)};
   var money=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(1)};
+  var pct=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(2)+"%"};
   var anchor="S";   // "S"=总投注驱动 | "A"=皇冠A下注额驱动 | "B"=星空B下注额驱动, 三选一由最后编辑的框决定
   function pickBest(a,b,rA,rB,cands,mk){
     // 枚举候选整数, 选两边净收益(含反水)取小(保底)最大的那个
@@ -197,6 +204,7 @@
     if(!valid){
       hero.className="hero na";
       $("verdict").parentElement.hidden=true; $("margin").hidden=true; $("lock").hidden=true; $("naTxt").hidden=false;
+      $("lockAmt").hidden=true;
       $("echoA").textContent="@—"; $("echoB").textContent="@—";
       if(anchor!=="A")$("stakeA").value=""; if(anchor!=="B")$("stakeB").value="";
       if(anchor!=="S")$("total").value="";
@@ -204,6 +212,7 @@
       return;
     }
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
+    $("lockAmt").hidden=false;
     var invSum=1/a+1/b, marginPct=(1-invSum)*100;
     // isOk: 连续最优分配下, 算上反水后是否有可能锁定非负收益(与总额大小无关的判据; 反水=0时退化为纯看margin)
     var isOk = (a*b-a-b) + b*rA + a*rB > 0;
@@ -233,7 +242,9 @@
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
     $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
     $("margin").textContent=(marginPct>=0?"+":"−")+Math.abs(marginPct).toFixed(2)+"%";
-    $("lock").textContent=(locked>=0?"总投 "+totalR+" → 稳赚 "+money(locked)+" 元":"总投 "+totalR+" → 最差 "+money(locked)+" 元");
+    $("lock").textContent="ROI "+pct(totalR ? locked/totalR*100 : 0);
+    $("lockAmt").className="lockAmt "+(locked>=0?"ok":"no");
+    $("lockAmt").textContent=(locked>=0?"稳赚 ":"最差 ")+money(locked)+" 元";
     $("echoA").textContent="@"+a; $("echoB").textContent="@"+b;
     $("hint").textContent="两边加起来 = 总额 "+totalR+" · 两边都填欧赔,皇冠港赔记得 +1";
     $("vA").textContent="回 "+(sA*a).toFixed(1)+" · 净 "+money(netA);
