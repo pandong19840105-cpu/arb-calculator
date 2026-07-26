@@ -133,7 +133,6 @@
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="皇冠A下注额"><span class="unit">元</span></div>
-        <button class="recbtn" id="recA" type="button" hidden>↺ 回推荐 <span id="recAv"></span></button>
       </div>
     </div>
     <div class="col">
@@ -144,7 +143,6 @@
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeB" inputmode="numeric" step="10" aria-label="星空B下注额"><span class="unit">元</span></div>
-        <button class="recbtn" id="recB" type="button" hidden>↺ 回推荐 <span id="recBv"></span></button>
       </div>
     </div>
   </div>
@@ -168,42 +166,58 @@
 <script>
   var $=function(id){return document.getElementById(id)};
   var money=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(1)};
-  var manual=null;   // null=用推荐 | "A" | "B" = 用户手动改了哪一边
+  var anchor="S";   // "S"=总投注驱动 | "A"=皇冠A下注额驱动 | "B"=星空B下注额驱动, 三选一由最后编辑的框决定
+  function pickBest(a,b,cands,mk){
+    // 枚举候选整数, 选两边净收益取小(保底)最大的那个
+    var best=null;
+    for(var i=0;i<cands.length;i++){
+      var p=mk(cands[i]);
+      if(!p||p.sA<0||p.sB<0) continue;
+      var S=p.sA+p.sB, na=p.sA*a-S, nb=p.sB*b-S, lk=Math.min(na,nb);
+      if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk};
+    }
+    return best;
+  }
   function recompute(){
-    var a=parseFloat($("a").value), b=parseFloat($("b").value), S=parseFloat($("total").value);
+    var a=parseFloat($("a").value), b=parseFloat($("b").value);
     var hero=$("hero");
-    var valid=isFinite(a)&&a>1&&isFinite(b)&&b>1&&isFinite(S)&&S>0;
+    var oddsOk=isFinite(a)&&a>1&&isFinite(b)&&b>1;
+    var anchorVal = anchor==="A" ? parseFloat($("stakeA").value)
+                  : anchor==="B" ? parseFloat($("stakeB").value)
+                  : parseFloat($("total").value);
+    var valid=oddsOk&&isFinite(anchorVal)&&anchorVal>0;
     if(!valid){
       hero.className="hero na";
       $("verdict").parentElement.hidden=true; $("margin").hidden=true; $("lock").hidden=true; $("naTxt").hidden=false;
       $("echoA").textContent="@—"; $("echoB").textContent="@—";
-      if(manual!=="A")$("stakeA").value=""; if(manual!=="B")$("stakeB").value="";
-      $("recA").hidden=true; $("recB").hidden=true;
+      if(anchor!=="A")$("stakeA").value=""; if(anchor!=="B")$("stakeB").value="";
+      if(anchor!=="S")$("total").value="";
       $("vA").textContent="—"; $("vB").textContent="—"; $("concl").textContent="";
       return;
     }
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
     var invSum=1/a+1/b, marginPct=(1-invSum)*100, isOk=marginPct>0;
-    var totalR=Math.round(S), exactA=S*(1/a)/invSum;
-    // 推荐(保底最大): 枚举精确值附近整数, 选保底(两边净收益取小)最大的那个
-    var best=null, cand=[Math.floor(exactA),Math.ceil(exactA)];
-    for(var i=0;i<cand.length;i++){
-      var xa=cand[i]; if(xa<0||xa>totalR) continue;
-      var xb=totalR-xa, na=xa*a-totalR, nb=xb*b-totalR, lk=Math.min(na,nb);
-      if(!best||lk>best.lk) best={sA:xa,sB:xb,lk:lk};
+    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额无关)
+    var r, exact;
+    if(anchor==="A"){
+      var A=Math.round(parseFloat($("stakeA").value)); if(!isFinite(A))A=0;
+      exact=A*a/b;
+      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xb){ return {sA:A,sB:xb}; });
+    }else if(anchor==="B"){
+      var B=Math.round(parseFloat($("stakeB").value)); if(!isFinite(B))B=0;
+      exact=B*b/a;
+      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:B}; });
+    }else{
+      var S=Math.round(parseFloat($("total").value));
+      exact=S*(1/a)/invSum;
+      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:S-xa}; });
     }
-    // 当前分注: 手动侧取用户输入, 另一侧=总额-手动侧; 否则用推荐
-    var sA,sB;
-    if(manual==="A"){ sA=Math.round(parseFloat($("stakeA").value)); if(!isFinite(sA))sA=0; sB=totalR-sA; }
-    else if(manual==="B"){ sB=Math.round(parseFloat($("stakeB").value)); if(!isFinite(sB))sB=0; sA=totalR-sB; }
-    else { sA=best.sA; sB=best.sB; }
-    // 写回分注框(正在被手动编辑的那侧不覆盖, 免得打断输入)
-    if(manual!=="A") $("stakeA").value=sA;
-    if(manual!=="B") $("stakeB").value=sB;
-    // 偏离推荐时显示"回推荐(推荐值)"
-    $("recA").hidden=!(manual && sA!==best.sA); $("recAv").textContent="("+best.sA+")";
-    $("recB").hidden=!(manual && sB!==best.sB); $("recBv").textContent="("+best.sB+")";
-    // 用当前分注(推荐或手动)算净收益/保底
+    if(!r) r={sA:0,sB:0};
+    var sA=r.sA, sB=r.sB, totalR=sA+sB;
+    // 写回三个框(正在被编辑的那个不覆盖, 免得打断输入)
+    if(anchor!=="A") $("stakeA").value=sA;
+    if(anchor!=="B") $("stakeB").value=sB;
+    if(anchor!=="S") $("total").value=totalR;
     var netA=sA*a-totalR, netB=sB*b-totalR, locked=Math.min(netA,netB);
     var canLock=locked>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
@@ -216,10 +230,9 @@
     $("vB").textContent="回 "+(sB*b).toFixed(1)+" · 净 "+money(netB);
     $("concl").textContent=locked>0?"不管哪边赢都是正的 = 锁定 ✓":"有一边为负 = 没锁定,别下 ✗";
   }
-  ["a","b","total"].forEach(function(id){$(id).addEventListener("input",function(){manual=null; recompute();})});
-  $("stakeA").addEventListener("input",function(){manual="A"; recompute();});
-  $("stakeB").addEventListener("input",function(){manual="B"; recompute();});
-  $("recA").addEventListener("click",function(){manual=null; recompute();});
-  $("recB").addEventListener("click",function(){manual=null; recompute();});
+  ["a","b"].forEach(function(id){$(id).addEventListener("input",recompute)});
+  $("total").addEventListener("input",function(){anchor="S"; recompute();});
+  $("stakeA").addEventListener("input",function(){anchor="A"; recompute();});
+  $("stakeB").addEventListener("input",function(){anchor="B"; recompute();});
   recompute();
 </script>
