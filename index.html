@@ -60,6 +60,10 @@
   .k{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--cap)}
   .odds{height:44px; border-radius:11px; padding:0 12px; font-size:26px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums; background:var(--fill); color:var(--ink); border:0; width:100%; outline:0}
   .odds:focus{background:var(--fillF)}
+  .rebRow{display:flex; align-items:center; gap:7px}
+  .rebRow .k{flex-shrink:0}
+  .reb{flex:1; min-width:0; height:26px; border-radius:8px; padding:0 8px; font-size:14px; font-weight:800; font-family:var(--fn); font-variant-numeric:tabular-nums; background:var(--fill); color:var(--ink); border:0; outline:0; text-align:right}
+  .reb:focus{background:var(--fillF)}
   .div{height:1px; background:var(--hair)}
   .stakeRow{display:flex; align-items:baseline; gap:5px}
   .stake{font-size:29px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums; color:var(--ink); background:transparent; border:0; border-bottom:2px dashed rgba(45,38,24,.22); width:100%; min-width:0; padding:0 0 3px; outline:0}
@@ -94,6 +98,7 @@
     .lock{font-size:17px; padding:13px 15px; margin-top:16px}
     .k{font-size:10px}
     .odds{height:54px; font-size:33px}
+    .reb{height:32px; font-size:17px}
     .stake{font-size:37px}
     .body{padding:15px 15px 18px; gap:10px}
     .band{padding:11px 14px}
@@ -130,6 +135,7 @@
       <div class="body">
         <div class="k">赔率</div>
         <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="皇冠 A 边欧赔">
+        <div class="rebRow"><span class="k">反水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="0" aria-label="皇冠A反水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="皇冠A下注额"><span class="unit">元</span></div>
@@ -140,6 +146,7 @@
       <div class="body">
         <div class="k">赔率</div>
         <input class="odds" id="b" inputmode="decimal" step="0.01" value="2.36" aria-label="星空 B 边欧赔">
+        <div class="rebRow"><span class="k">反水</span><input class="reb" id="rebB" inputmode="decimal" step="0.1" value="0" aria-label="星空B反水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeB" inputmode="numeric" step="10" aria-label="星空B下注额"><span class="unit">元</span></div>
@@ -167,19 +174,20 @@
   var $=function(id){return document.getElementById(id)};
   var money=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(1)};
   var anchor="S";   // "S"=总投注驱动 | "A"=皇冠A下注额驱动 | "B"=星空B下注额驱动, 三选一由最后编辑的框决定
-  function pickBest(a,b,cands,mk){
-    // 枚举候选整数, 选两边净收益取小(保底)最大的那个
+  function pickBest(a,b,rA,rB,cands,mk){
+    // 枚举候选整数, 选两边净收益(含反水)取小(保底)最大的那个
     var best=null;
     for(var i=0;i<cands.length;i++){
       var p=mk(cands[i]);
       if(!p||p.sA<0||p.sB<0) continue;
-      var S=p.sA+p.sB, na=p.sA*a-S, nb=p.sB*b-S, lk=Math.min(na,nb);
+      var S=p.sA+p.sB, rebate=rA*p.sA+rB*p.sB, na=p.sA*a-S+rebate, nb=p.sB*b-S+rebate, lk=Math.min(na,nb);
       if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk};
     }
     return best;
   }
   function recompute(){
     var a=parseFloat($("a").value), b=parseFloat($("b").value);
+    var rA=(parseFloat($("rebA").value)||0)/100, rB=(parseFloat($("rebB").value)||0)/100;
     var hero=$("hero");
     var oddsOk=isFinite(a)&&a>1&&isFinite(b)&&b>1;
     var anchorVal = anchor==="A" ? parseFloat($("stakeA").value)
@@ -196,21 +204,23 @@
       return;
     }
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
-    var invSum=1/a+1/b, marginPct=(1-invSum)*100, isOk=marginPct>0;
-    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额无关)
+    var invSum=1/a+1/b, marginPct=(1-invSum)*100;
+    // isOk: 连续最优分配下, 算上反水后是否有可能锁定非负收益(与总额大小无关的判据; 反水=0时退化为纯看margin)
+    var isOk = (a*b-a-b) + b*rA + a*rB > 0;
+    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额/反水无关, 只有锁定金额受反水影响)
     var r, exact;
     if(anchor==="A"){
       var A=Math.round(parseFloat($("stakeA").value)); if(!isFinite(A))A=0;
       exact=A*a/b;
-      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xb){ return {sA:A,sB:xb}; });
+      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xb){ return {sA:A,sB:xb}; });
     }else if(anchor==="B"){
       var B=Math.round(parseFloat($("stakeB").value)); if(!isFinite(B))B=0;
       exact=B*b/a;
-      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:B}; });
+      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:B}; });
     }else{
       var S=Math.round(parseFloat($("total").value));
       exact=S*(1/a)/invSum;
-      r=pickBest(a,b,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:S-xa}; });
+      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:S-xa}; });
     }
     if(!r) r={sA:0,sB:0};
     var sA=r.sA, sB=r.sB, totalR=sA+sB;
@@ -218,7 +228,7 @@
     if(anchor!=="A") $("stakeA").value=sA;
     if(anchor!=="B") $("stakeB").value=sB;
     if(anchor!=="S") $("total").value=totalR;
-    var netA=sA*a-totalR, netB=sB*b-totalR, locked=Math.min(netA,netB);
+    var rebate=rA*sA+rB*sB, netA=sA*a-totalR+rebate, netB=sB*b-totalR+rebate, locked=Math.min(netA,netB);
     var canLock=locked>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
     $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
@@ -230,7 +240,7 @@
     $("vB").textContent="回 "+(sB*b).toFixed(1)+" · 净 "+money(netB);
     $("concl").textContent=locked>0?"不管哪边赢都是正的 = 锁定 ✓":"有一边为负 = 没锁定,别下 ✗";
   }
-  ["a","b"].forEach(function(id){$(id).addEventListener("input",recompute)});
+  ["a","b","rebA","rebB"].forEach(function(id){$(id).addEventListener("input",recompute)});
   $("total").addEventListener("input",function(){anchor="S"; recompute();});
   $("stakeA").addEventListener("input",function(){anchor="A"; recompute();});
   $("stakeB").addEventListener("input",function(){anchor="B"; recompute();});
