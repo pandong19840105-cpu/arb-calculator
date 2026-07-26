@@ -140,7 +140,7 @@
       <div class="body">
         <div class="k">赔率</div>
         <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="皇冠 A 边欧赔">
-        <div class="rebRow"><span class="k">反水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="2.5" aria-label="皇冠A反水比例"><span class="unit">%</span></div>
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="2.5" aria-label="皇冠A返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="皇冠A下注额"><span class="unit">元</span></div>
@@ -151,7 +151,7 @@
       <div class="body">
         <div class="k">赔率</div>
         <input class="odds" id="b" inputmode="decimal" step="0.01" value="2.36" aria-label="星空 B 边欧赔">
-        <div class="rebRow"><span class="k">反水</span><input class="reb" id="rebB" inputmode="decimal" step="0.1" value="0.38" aria-label="星空B反水比例"><span class="unit">%</span></div>
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebB" inputmode="decimal" step="0.1" value="0.38" aria-label="星空B返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeB" inputmode="numeric" step="10" aria-label="星空B下注额"><span class="unit">元</span></div>
@@ -182,7 +182,7 @@
   var pct=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(2)+"%"};
   var anchor="S";   // "S"=总投注驱动 | "A"=皇冠A下注额驱动 | "B"=星空B下注额驱动, 三选一由最后编辑的框决定
   function pickBest(a,b,rA,rB,cands,mk){
-    // 枚举候选整数, 选两边净收益(含反水)取小(保底)最大的那个
+    // 枚举候选整数, 选两边净收益(含返水)取小(保底)最大的那个
     var best=null;
     for(var i=0;i<cands.length;i++){
       var p=mk(cands[i]);
@@ -214,9 +214,9 @@
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
     $("lockAmt").hidden=false;
     var invSum=1/a+1/b, marginPct=(1-invSum)*100;
-    // isOk: 连续最优分配下, 算上反水后是否有可能锁定非负收益(与总额大小无关的判据; 反水=0时退化为纯看margin)
+    // isOk: 连续最优分配下, 算上返水后是否有可能锁定非负收益(与总额大小无关的判据; 返水=0时退化为纯看margin)
     var isOk = (a*b-a-b) + b*rA + a*rB > 0;
-    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额/反水无关, 只有锁定金额受反水影响)
+    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额/返水无关, 只有锁定金额受返水影响)
     var r, exact;
     if(anchor==="A"){
       var A=Math.round(parseFloat($("stakeA").value)); if(!isFinite(A))A=0;
