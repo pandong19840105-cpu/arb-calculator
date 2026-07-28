@@ -91,6 +91,34 @@
   .vk{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--cap)}
   .vv{font-size:13px; font-weight:900; font-family:var(--fn); color:var(--ink2)}
   .concl{text-align:center; font-size:12.5px; font-weight:700; color:var(--ink2)}
+  /* 盘口类型: 决定这一注到底有几种结果。半线两种, 整数线/四分线各三种 */
+  .segWrap{display:flex; flex-direction:column; gap:6px}
+  .segLab{text-align:center; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--cap)}
+  .seg{display:flex; gap:5px; background:rgba(45,38,24,.05); padding:4px; border-radius:13px}
+  .seg button{flex:1; min-width:0; border:0; cursor:pointer; border-radius:10px; padding:8px 4px;
+    background:transparent; color:var(--cap2); font-family:inherit; font-size:11.5px; font-weight:800;
+    letter-spacing:.02em; line-height:1.35; transition:background .15s,color .15s,box-shadow .15s}
+  .seg button small{display:block; font-size:9px; font-weight:700; opacity:.72; margin-top:3px; line-height:1.5}
+  .seg button small br+*{margin-top:1px}
+  .seg button:hover{color:var(--ink2)}
+  .seg button.on{background:#fff; color:var(--ink); box-shadow:0 3px 10px -6px rgba(60,48,24,.45)}
+  .seg button:focus-visible{outline:2px solid var(--ink2); outline-offset:2px}
+  .whoWrap{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap}
+  /* 🔴 显式的 display 会覆盖 [hidden] 自带的 display:none —— 不写这行, hidden 属性形同虚设 */
+  .whoWrap[hidden],.seg[hidden],.spread[hidden]{display:none}
+  .whoLab{font-size:10px; letter-spacing:.04em; color:var(--cap2); font-weight:700}
+  .who{display:inline-flex; gap:5px; background:rgba(45,38,24,.05); padding:3px; border-radius:11px}
+  .who button{border:0; cursor:pointer; border-radius:9px; padding:6px 12px; background:transparent;
+    color:var(--cap2); font-family:inherit; font-size:11px; font-weight:800}
+  .who button.on{background:#fff; color:var(--ink); box-shadow:0 3px 10px -7px rgba(60,48,24,.45)}
+  .who button:focus-visible{outline:2px solid var(--ink2); outline-offset:2px}
+  .vhalf.mid .vk{color:var(--cap2)}
+  .spread{text-align:center; font-size:10px; color:var(--cap); letter-spacing:.03em}
+  .spread b{font-family:var(--fn); font-variant-numeric:tabular-nums; color:var(--ink2)}
+  @media (prefers-color-scheme:dark){
+    .seg,.who{background:rgba(255,255,255,.07)}
+    .seg button.on,.who button.on{background:rgba(255,255,255,.14)}
+  }
 
   @media (max-width:520px){
     body{padding:16px 12px 24px; align-items:flex-start}
@@ -140,7 +168,7 @@
       <div class="body">
         <div class="k">赔率</div>
         <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="皇冠 A 边欧赔">
-        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="2.5" aria-label="皇冠A返水比例"><span class="unit">%</span></div>
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="2" aria-label="皇冠A返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
         <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="皇冠A下注额"><span class="unit">元</span></div>
@@ -166,12 +194,26 @@
 
   <div class="hint" id="hint">两边加起来 = 总额 2000 · 两边都填欧赔,皇冠港赔记得 +1</div>
 
-  <section class="verify">
-    <div class="vt">验证 · 两种结果都得为正</div>
-    <div class="vrow">
-      <div class="vhalf"><span class="vk">A 边赢</span><span class="vv" id="vA">—</span></div>
-      <div class="vhalf"><span class="vk">B 边赢</span><span class="vv" id="vB">—</span></div>
+  <div class="segWrap">
+    <div class="segLab">盘口类型 · 照着线值长相选,决定有几种结果</div>
+    <div class="seg" id="seg" role="group" aria-label="盘口类型">
+      <button type="button" data-mode="half" class="on">半线<small>带 .5<br>1.5、2.5、0.5</small></button>
+      <button type="button" data-mode="int">整数线<small>光整数<br>1、2、3、0</small></button>
+      <button type="button" data-mode="q">四分线<small>带斜杠<br>0/0.5、1.5/2</small></button>
     </div>
+    <div class="whoWrap" id="whoWrap" hidden>
+      <span class="whoLab">打中那个整数时,谁半赢?</span>
+      <div class="who" id="who" role="group" aria-label="四分线走盘档谁半赢">
+        <button type="button" data-who="A" class="on">A 半赢</button>
+        <button type="button" data-who="B">B 半赢</button>
+      </div>
+    </div>
+    <div class="spread" id="qHint" hidden>押<b>大</b>的那边半赢 · 让球则是<b>受让</b>的那边半赢</div>
+  </div>
+
+  <section class="verify">
+    <div class="vt" id="vt">验证 · 两种结果都得为正</div>
+    <div class="vrow" id="vrow"></div>
     <div class="concl" id="concl"></div>
   </section>
 </main>
@@ -181,13 +223,50 @@
   var money=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(1)};
   var pct=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(2)+"%"};
   var anchor="S";   // "S"=总投注驱动 | "A"=皇冠A下注额驱动 | "B"=星空B下注额驱动, 三选一由最后编辑的框决定
+  var mode="half";  // half=半线(两种结果) | int=整数线(打中全退) | q=四分线(打中半退)
+  var qWho="A";     // 四分线打中那个整数时, 哪边半赢(押"大"/受让的那边)
+
+  // 🔴 这一注到底有几种结果, 取决于盘口线值 —— 这正是原版漏掉的东西。
+  //   半线 1.5/2.5 : 只有两种, 非赢即输
+  //   整数线 2/3   : 三种, 打中那个整数 = 本金全退, 两边都不赢(净收益只剩返水)
+  //   四分线 1.5/2 : 三种, 打中时一边赢一半退一半、另一边输一半退一半
+  // 少算的那一档在【烂盘口】上是最好的(所以以前看着没事), 在【肥盘口】上是最差的 ——
+  // 缝越肥, "全退"越吃亏, 因为别人都在赚而它只退本金。
+  // 🔴 一条公式管所有情况 —— 退钱 = 那部分钱【当没下过】:
+  //      退全款 = 这一注没做过        (frac 0)
+  //      退半款 = 只做了一半          (frac 0.5)
+  //      不退   = 整注都算            (frac 1)
+  //    退回的钱不产生返水(平台只对真正分出输赢的部分返)。
+  //    这样整数线/四分线不再各有一套公式 —— 少一套公式就少一处能写反的地方(写反过一次)。
+  function one(a,b,sA,sB,rA,rB,frac,winner){
+    var eA=sA*frac, eB=sB*frac;                 // 真正下出去的
+    var refund=(sA-eA)+(sB-eB);                 // 退回来的
+    var reb=rA*eA+rB*eB;                        // 只有下出去的才有返水
+    var back=refund+(winner==="A"?eA*a:winner==="B"?eB*b:0);
+    return back-(sA+sB)+reb;
+  }
+  function nets(a,b,sA,sB,rA,rB){
+    var out=[{k:"A 边赢", v:one(a,b,sA,sB,rA,rB,1,"A")}];
+    if(mode==="int"){
+      out.push({k:"打中 · 全退", v:one(a,b,sA,sB,rA,rB,0,null), mid:true});
+    }else if(mode==="q"){
+      out.push({k:"打中 · "+qWho+" 半赢",
+                v:one(a,b,sA,sB,rA,rB,0.5,qWho), mid:true});
+    }
+    out.push({k:"B 边赢", v:one(a,b,sA,sB,rA,rB,1,"B")});
+    return out;
+  }
+  function worstOf(arr){
+    var w=arr[0].v; for(var i=1;i<arr.length;i++) if(arr[i].v<w) w=arr[i].v; return w;
+  }
   function pickBest(a,b,rA,rB,cands,mk){
-    // 枚举候选整数, 选两边净收益(含返水)取小(保底)最大的那个
+    // 枚举候选整数, 选【所有档】净收益(含返水)取小(保底)最大的那个。
+    // 原版只比 A/B 两档 -> 整数线/四分线上会挑出一个"看起来最优、实则走盘档很差"的分注。
     var best=null;
     for(var i=0;i<cands.length;i++){
       var p=mk(cands[i]);
       if(!p||p.sA<0||p.sB<0) continue;
-      var S=p.sA+p.sB, rebate=rA*p.sA+rB*p.sB, na=p.sA*a-S+rebate, nb=p.sB*b-S+rebate, lk=Math.min(na,nb);
+      var lk=worstOf(nets(a,b,p.sA,p.sB,rA,rB));
       if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk};
     }
     return best;
@@ -208,7 +287,7 @@
       $("echoA").textContent="@—"; $("echoB").textContent="@—";
       if(anchor!=="A")$("stakeA").value=""; if(anchor!=="B")$("stakeB").value="";
       if(anchor!=="S")$("total").value="";
-      $("vA").textContent="—"; $("vB").textContent="—"; $("concl").textContent="";
+      $("vrow").innerHTML=""; $("concl").textContent="";
       return;
     }
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
@@ -237,7 +316,7 @@
     if(anchor!=="A") $("stakeA").value=sA;
     if(anchor!=="B") $("stakeB").value=sB;
     if(anchor!=="S") $("total").value=totalR;
-    var rebate=rA*sA+rB*sB, netA=sA*a-totalR+rebate, netB=sB*b-totalR+rebate, locked=Math.min(netA,netB);
+    var arr=nets(a,b,sA,sB,rA,rB), locked=worstOf(arr);
     var canLock=locked>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
     $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
@@ -247,10 +326,39 @@
     $("lockAmt").textContent=(locked>=0?"稳赚 ":"最差 ")+money(locked)+" 元";
     $("echoA").textContent="@"+a; $("echoB").textContent="@"+b;
     $("hint").textContent="两边加起来 = 总额 "+totalR+" · 两边都填欧赔,皇冠港赔记得 +1";
-    $("vA").textContent="回 "+(sA*a).toFixed(1)+" · 净 "+money(netA);
-    $("vB").textContent="回 "+(sB*b).toFixed(1)+" · 净 "+money(netB);
-    $("concl").textContent=locked>0?"不管哪边赢都是正的 = 锁定 ✓":"有一边为负 = 没锁定,别下 ✗";
+    // 验证区按实际档数渲染(2 或 3 格), 少算一档就等于把风险藏起来
+    var html="";
+    for(var i=0;i<arr.length;i++){
+      var it=arr[i];
+      html+='<div class="vhalf'+(it.mid?" mid":"")+'"><span class="vk">'+it.k+
+            '</span><span class="vv">净 '+money(it.v)+'</span></div>';
+    }
+    $("vrow").innerHTML=html;
+    $("vt").textContent="验证 · "+(arr.length===3?"三":"两")+"种结果都得为正";
+    var spread=Math.max.apply(null,arr.map(function(x){return x.v}))-locked;
+    $("concl").textContent = locked>0
+      ? "不管哪种结果都是正的 = 锁定 ✓　最差 "+money(locked)+" · 档差 "+spread.toFixed(1)
+      : "有一档为负 = 没锁定,别下 ✗　最差 "+money(locked);
   }
+  // 盘口类型: 直接决定有几种结果, 所以改它必须重算
+  $("seg").addEventListener("click",function(e){
+    var btn=e.target.closest("button"); if(!btn) return;
+    mode=btn.getAttribute("data-mode");
+    Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){
+      x.classList.toggle("on",x===btn);
+    });
+    $("whoWrap").hidden = mode!=="q";
+    $("qHint").hidden   = mode!=="q";
+    recompute();
+  });
+  $("who").addEventListener("click",function(e){
+    var btn=e.target.closest("button"); if(!btn) return;
+    qWho=btn.getAttribute("data-who");
+    Array.prototype.forEach.call(this.querySelectorAll("button"),function(x){
+      x.classList.toggle("on",x===btn);
+    });
+    recompute();
+  });
   ["a","b","rebA","rebB"].forEach(function(id){$(id).addEventListener("input",recompute)});
   $("total").addEventListener("input",function(){anchor="S"; recompute();});
   $("stakeA").addEventListener("input",function(){anchor="A"; recompute();});
