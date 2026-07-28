@@ -255,13 +255,18 @@
     var w=arr[0].v; for(var i=1;i<arr.length;i++) if(arr[i].v<w) w=arr[i].v; return w;
   }
   function pickBest(a,b,rA,rB,cands,mk){
-    // 枚举候选整数, 选【所有档】净收益(含返水)取小(保底)最大的那个。
-    // 原版只比 A/B 两档 -> 整数线/四分线上会挑出一个"看起来最优、实则走盘档很差"的分注。
+    // 枚举候选整数, 挑分注。
+    // 🔴 只看【分出输赢】那两档, 不看中间档:
+    //    整数线的中间档恒为 0(本金全退, 跟分注一点关系没有) —— 纳入优化会把两个候选的保底
+    //    双双压成 0, 于是分不出好坏、保留先遇到的那个, 结果换个盘口类型分注就莫名跳动。
+    //    四分线的中间档 = 某一档的一半, 跟着那档走, 也不需要单独优化。
+    //    所以三种盘口类型下分注完全一致 —— 盘口类型只改变"有几种结果", 不改变"该下多少"。
     var best=null;
     for(var i=0;i<cands.length;i++){
       var p=mk(cands[i]);
       if(!p||p.sA<0||p.sB<0) continue;
-      var lk=worstOf(nets(a,b,p.sA,p.sB,rA,rB));
+      var real=nets(a,b,p.sA,p.sB,rA,rB).filter(function(x){return !x.mid});
+      var lk=worstOf(real);
       if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk};
     }
     return best;
@@ -330,8 +335,12 @@
     $("vrow").innerHTML=html;
     $("vt").textContent="验证 · "+(arr.length===3?"三":"两")+"种结果都得为正";
     var spread=Math.max.apply(null,arr.map(function(x){return x.v}))-locked;
+    // 🔴 三态, 不是两态: 0 不是"负"。整数线打中 = 本金原样退回 = 不赚不亏, 那是【白跑一趟】
+    // 而不是亏钱, 说成"有一档为负,别下"既不准确, 也和上面"有缝·可下"自相矛盾。
     $("concl").textContent = locked>0
       ? "不管哪种结果都是正的 = 锁定 ✓　最差 "+money(locked)+" · 档差 "+spread.toFixed(1)
+      : locked===0
+      ? "最差是打中那档 = 本金全退,不赚不亏(白跑一趟) · 其余档最高 "+money(locked+spread)
       : "有一档为负 = 没锁定,别下 ✗　最差 "+money(locked);
   }
   // 盘口类型: 直接决定有几种结果, 所以改它必须重算
