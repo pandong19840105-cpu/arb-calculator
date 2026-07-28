@@ -81,7 +81,6 @@
   .lockAmt.ok{background:rgba(10,130,140,.12); color:#0a828c}
   .lockAmt.no{background:rgba(194,42,24,.12); color:#c22a18}
 
-  .hint{text-align:center; font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--cap); padding:0 6px; line-height:1.5}
 
   .verify{border-top:2px dashed rgba(45,38,24,.13); padding-top:12px; display:flex; flex-direction:column; gap:9px}
   .vt{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--cap); text-align:center}
@@ -93,7 +92,6 @@
   .concl{text-align:center; font-size:12.5px; font-weight:700; color:var(--ink2)}
   /* 盘口类型: 决定这一注到底有几种结果。半线两种, 整数线/四分线各三种 */
   .segWrap{display:flex; flex-direction:column; gap:6px}
-  .segLab{text-align:center; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--cap)}
   .seg{display:flex; gap:5px; background:rgba(45,38,24,.05); padding:4px; border-radius:13px}
   .seg button{flex:1; min-width:0; border:0; cursor:pointer; border-radius:10px; padding:8px 4px;
     background:transparent; color:var(--cap2); font-family:inherit; font-size:11.5px; font-weight:800;
@@ -121,25 +119,24 @@
   }
 
   @media (max-width:520px){
-    body{padding:16px 12px 24px; align-items:flex-start}
-    .card{gap:18px; padding:18px}
-    .hero{padding:22px 20px}
+    body{padding:10px 12px 12px; align-items:flex-start}
+    .card{gap:13px; padding:15px}
+    .hero{padding:17px 18px}
     .hlab{font-size:10.5px}
     .margin{font-size:clamp(42px,13.5vw,54px)}
     .verdict{font-size:clamp(23px,6.6vw,27px)}
-    .lock{font-size:17px; padding:13px 15px; margin-top:16px}
+    .lock{font-size:16px; padding:10px 14px; margin-top:11px}
     .k{font-size:10px}
-    .odds{height:54px; font-size:33px}
+    .odds{height:48px; font-size:30px}
     .reb{height:32px; font-size:17px}
     .stake{font-size:37px}
-    .body{padding:15px 15px 18px; gap:10px}
-    .band{padding:11px 14px}
+    .body{padding:12px 13px 14px; gap:8px}
+    .band{padding:9px 13px}
     .band b{font-size:15.5px}
-    .pill{padding:14px 30px; min-width:280px}
+    .pill{padding:11px 26px; min-width:250px}
     .pill input{font-size:26px; width:132px}
     .lockAmt{font-size:15px; padding:11px 14px}
-    .hint{font-size:10px}
-    .verify{padding-top:16px; gap:12px}
+    .verify{padding-top:11px; gap:9px}
     .vk{font-size:10px}
     .vv{font-size:15px}
     .concl{font-size:14.5px}
@@ -192,10 +189,8 @@
     <div class="lockAmt" id="lockAmt"></div>
   </div>
 
-  <div class="hint" id="hint">两边加起来 = 总额 2000 · 两边都填欧赔,皇冠港赔记得 +1</div>
 
   <div class="segWrap">
-    <div class="segLab">盘口类型 · 照着线值长相选,决定有几种结果</div>
     <div class="seg" id="seg" role="group" aria-label="盘口类型">
       <button type="button" data-mode="half" class="on">半线<small>带 .5<br>1.5、2.5、0.5</small></button>
       <button type="button" data-mode="int">整数线<small>光整数<br>1、2、3、0</small></button>
@@ -325,7 +320,6 @@
     $("lockAmt").className="lockAmt "+(locked>=0?"ok":"no");
     $("lockAmt").textContent=(locked>=0?"稳赚 ":"最差 ")+money(locked)+" 元";
     $("echoA").textContent="@"+a; $("echoB").textContent="@"+b;
-    $("hint").textContent="两边加起来 = 总额 "+totalR+" · 两边都填欧赔,皇冠港赔记得 +1";
     // 验证区按实际档数渲染(2 或 3 格), 少算一档就等于把风险藏起来
     var html="";
     for(var i=0;i<arr.length;i++){
