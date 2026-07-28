@@ -197,13 +197,13 @@
       <button type="button" data-mode="q">四分线<small>带斜杠<br>0/0.5、1.5/2</small></button>
     </div>
     <div class="whoWrap" id="whoWrap" hidden>
-      <span class="whoLab">打中那个整数时,谁半赢?</span>
+      <span class="whoLab">打中那个整数时,哪边是赢的一方?</span>
       <div class="who" id="who" role="group" aria-label="四分线走盘档谁半赢">
-        <button type="button" data-who="A" class="on">A 半赢</button>
-        <button type="button" data-who="B">B 半赢</button>
+        <button type="button" data-who="A" class="on">A 赢</button>
+        <button type="button" data-who="B">B 赢</button>
       </div>
     </div>
-    <div class="spread" id="qHint" hidden>押<b>大</b>的那边半赢 · 让球则是<b>受让</b>的那边半赢</div>
+    <div class="spread" id="qHint" hidden>押<b>大</b>的那边算赢 · 让球则是<b>受让</b>的那边 —— 赢的赢一半,输的输一半</div>
   </div>
 
   <section class="verify">
@@ -245,7 +245,7 @@
     if(mode==="int"){
       out.push({k:"打中 · 全退", v:one(a,b,sA,sB,rA,rB,0,null), mid:true});
     }else if(mode==="q"){
-      out.push({k:"打中 · "+qWho+" 半赢",
+      out.push({k:"打中 · 输赢减半",
                 v:one(a,b,sA,sB,rA,rB,0.5,qWho), mid:true});
     }
     out.push({k:"B 边赢", v:one(a,b,sA,sB,rA,rB,1,"B")});
@@ -316,14 +316,21 @@
     if(anchor!=="A") $("stakeA").value=sA;
     if(anchor!=="B") $("stakeB").value=sB;
     if(anchor!=="S") $("total").value=totalR;
-    var arr=nets(a,b,sA,sB,rA,rB), locked=worstOf(arr);
-    var canLock=locked>=0;
+    var arr=nets(a,b,sA,sB,rA,rB);
+    // 🔴 ROI 只看【分出输赢】那两档 —— 它衡量的是"这个缝有多肥", 而走盘只是"结果的一种
+    // 可能"(整数线=不输不赢, 四分线=输赢减半), 两回事。把走盘算进 ROI 会让同一个缝在不同
+    // 盘口类型下报出不同的肥度, 整数线还会被一路压成 0.00%, 那个数就没法用来比较了。
+    // 最坏能有多坏, 由下面的"稳赚/最差 X 元"和各档明细负责说。
+    var locked=worstOf(arr.filter(function(x){return !x.mid}));   // 缝的质量 -> ROI
+    var worstAll=worstOf(arr);                                    // 真实最坏 -> 金额标签
+    var canLock=worstAll>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
     $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
     $("margin").textContent=(marginPct>=0?"+":"−")+Math.abs(marginPct).toFixed(2)+"%";
     $("lock").textContent="ROI "+pct(totalR ? locked/totalR*100 : 0);
-    $("lockAmt").className="lockAmt "+(locked>=0?"ok":"no");
-    $("lockAmt").textContent=(locked>=0?"稳赚 ":"最差 ")+money(locked)+" 元";
+    // 金额标签说【真实最坏】(含走盘那档), ROI 说【缝有多肥】—— 两个数各管一件事
+    $("lockAmt").className="lockAmt "+(worstAll>=0?"ok":"no");
+    $("lockAmt").textContent=(worstAll>0?"稳赚 ":worstAll===0?"最差 ":"最差 ")+money(worstAll)+" 元";
     $("echoA").textContent="@"+a; $("echoB").textContent="@"+b;
     // 验证区按实际档数渲染(2 或 3 格), 少算一档就等于把风险藏起来
     var html="";
@@ -334,14 +341,14 @@
     }
     $("vrow").innerHTML=html;
     $("vt").textContent="验证 · "+(arr.length===3?"三":"两")+"种结果都得为正";
-    var spread=Math.max.apply(null,arr.map(function(x){return x.v}))-locked;
+    var spread=Math.max.apply(null,arr.map(function(x){return x.v}))-worstAll;
     // 🔴 三态, 不是两态: 0 不是"负"。整数线打中 = 本金原样退回 = 不赚不亏, 那是【白跑一趟】
     // 而不是亏钱, 说成"有一档为负,别下"既不准确, 也和上面"有缝·可下"自相矛盾。
-    $("concl").textContent = locked>0
-      ? "不管哪种结果都是正的 = 锁定 ✓　最差 "+money(locked)+" · 档差 "+spread.toFixed(1)
-      : locked===0
-      ? "最差是打中那档 = 本金全退,不赚不亏(白跑一趟) · 其余档最高 "+money(locked+spread)
-      : "有一档为负 = 没锁定,别下 ✗　最差 "+money(locked);
+    $("concl").textContent = worstAll>0
+      ? "不管哪种结果都是正的 = 锁定 ✓　最差 "+money(worstAll)+" · 档差 "+spread.toFixed(1)
+      : worstAll===0
+      ? "最差是打中那档 = 本金全退,不赚不亏(白跑一趟) · 其余档最高 "+money(worstAll+spread)
+      : "有一档为负 = 没锁定,别下 ✗　最差 "+money(worstAll);
   }
   // 盘口类型: 直接决定有几种结果, 所以改它必须重算
   $("seg").addEventListener("click",function(e){
