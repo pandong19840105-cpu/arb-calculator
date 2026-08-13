@@ -233,10 +233,41 @@
   //      不退   = 整注都算            (frac 1)
   //    退回的钱不产生返水(平台只对真正分出输赢的部分返)。
   //    这样整数线/四分线不再各有一套公式 —— 少一套公式就少一处能写反的地方(写反过一次)。
+  // ---- 返水规则(插拔区) -------------------------------------------------
+  // 🔴 费率会变(用得越多等级越高)。改费率【不用改代码】: 直接在页面上改那两个输入框,
+  //    改完自动记住(localStorage), 下次打开还是你填的值。下面 defA/defB 只是出厂值。
+  // 🔴 改【规则】(平台换口径)只动这一个对象, 别处都不用碰 —— one()/nets()/pickBest
+  //    全都透过 rebOf 拿返水, 所以规则一换, 连"该下多少"的最优分注都自己跟着变。
+  //
+  // 有效流水基数: 2026-08-13 拿两家平台报表逐日对账坐实, 两家【不一样】——
+  //    皇冠  有效 = |净输赢|             赢按净赢额, 【不封顶】(赔率>2 时超过本金)
+  //    星空  有效 = min(本金, |净输赢|)   赢按净赢额, 【封顶本金】; 且【逐笔向下取整】
+  //    输的那边两家都 = 本金(|净输赢| 恒等于本金); 退回的钱不产生返水。
+  // 🔴 在这之前这里是 rA*eA+rB*eB(一律按本金全额), 那是从一开始就记错的口径, 不是实现
+  //    走样。它让两档看起来几乎相等, 而真值不是 —— 1.90/2.10 两边下 1000/905 时,
+  //    旧算法显示 18.44/18.94, 真实到账 16.00/18.50。赢的那边返水更少, 差额随赔率和
+  //    胜负翻转, 不是一个能打折修正的固定系数。
+  var REBATE={
+    defA:2, defB:0.38,                          // 出厂费率 %(页面上改了就记住)
+    base:function(side,atRisk,odd,isWin){
+      if(atRisk<=0) return 0;
+      if(!isWin) return atRisk;                 // 输 -> |净输赢| = 本金, 两家同
+      var win=atRisk*(odd-1);                   // 赢 -> 净赢额
+      return side==="A" ? win : Math.min(atRisk,win);  // 皇冠不封顶 / 星空封顶本金
+    },
+    round:function(side,inc){
+      // epsilon: 0.0038*5000 在二进制里可能落到 18.999999999999996, 直接 floor 白丢一块
+      return side==="B" ? Math.floor(inc+1e-9) : inc;  // 星空逐笔向下取整
+    }
+  };
+  function rebOf(side,atRisk,odd,isWin,rate){
+    return REBATE.round(side, rate*REBATE.base(side,atRisk,odd,isWin));
+  }
   function one(a,b,sA,sB,rA,rB,frac,winner){
     var eA=sA*frac, eB=sB*frac;                 // 真正下出去的
     var refund=(sA-eA)+(sB-eB);                 // 退回来的
-    var reb=rA*eA+rB*eB;                        // 只有下出去的才有返水
+    // 只有下出去的才有返水, 且【赢的那边基数不是本金】(见上面 REBATE.base)
+    var reb=rebOf("A",eA,a,winner==="A",rA)+rebOf("B",eB,b,winner==="B",rB);
     var back=refund+(winner==="A"?eA*a:winner==="B"?eB*b:0);
     return back-(sA+sB)+reb;
   }
@@ -253,6 +284,17 @@
   }
   function worstOf(arr){
     var w=arr[0].v; for(var i=1;i<arr.length;i++) if(arr[i].v<w) w=arr[i].v; return w;
+  }
+  // 🔴 候选窗口不能只取 floor/ceil。旧口径下返水与谁赢无关, 最优点就落在"两边赔付相等"
+  //    那一处, 左右各试一个整数就够。新口径下赢的那边返水更少, 最优点会偏开(上面那组
+  //    1000/905 -> 1001/904, 保底 16.00 -> 16.42; 盘子越大偏得越多), 只看那两个就
+  //    永远够不到。
+  //    这里扫一窗整数、逐个按真公式算最坏值取最大 —— 不推任何闭式解, 所以返水规则以后
+  //    再改, 它也自动仍然最优。121 个候选 x 3 档 = 微秒级, 白给。
+  function around(x){
+    var c=[], m=Math.round(x);
+    for(var k=-60;k<=60;k++) c.push(m+k);
+    return c;
   }
   function pickBest(a,b,rA,rB,cands,mk){
     // 枚举候选整数, 挑分注。
@@ -293,22 +335,24 @@
     $("verdict").parentElement.hidden=false; $("margin").hidden=false; $("lock").hidden=false; $("naTxt").hidden=true;
     $("lockAmt").hidden=false;
     var invSum=1/a+1/b, marginPct=(1-invSum)*100;
-    // isOk: 连续最优分配下, 算上返水后是否有可能锁定非负收益(与总额大小无关的判据; 返水=0时退化为纯看margin)
-    var isOk = (a*b-a-b) + b*rA + a*rB > 0;
-    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解(两边赔付相等的比例, 与总额/返水无关, 只有锁定金额受返水影响)
+    // 🔴 "有没有缝"改由【真公式枚举】回答(见下面 isOk), 旧的闭式判据
+    //    (a*b-a-b)+b*rA+a*rB>0 是在"返水与谁赢无关"这个前提下推的, 新口径下不成立;
+    //    而再推一条新的闭式解, 等于又多一份得跟着规则变的公式。
+    // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解。
+    // 🔴 最优比例不再恒等于"两边赔付相等" —— 赢的那边返水少, 最优点会偏开一点(见 around)
     var r, exact;
     if(anchor==="A"){
       var A=Math.round(parseFloat($("stakeA").value)); if(!isFinite(A))A=0;
       exact=A*a/b;
-      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xb){ return {sA:A,sB:xb}; });
+      r=pickBest(a,b,rA,rB,around(exact), function(xb){ return {sA:A,sB:xb}; });
     }else if(anchor==="B"){
       var B=Math.round(parseFloat($("stakeB").value)); if(!isFinite(B))B=0;
       exact=B*b/a;
-      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:B}; });
+      r=pickBest(a,b,rA,rB,around(exact), function(xa){ return {sA:xa,sB:B}; });
     }else{
       var S=Math.round(parseFloat($("total").value));
       exact=S*(1/a)/invSum;
-      r=pickBest(a,b,rA,rB,[Math.floor(exact),Math.ceil(exact)], function(xa){ return {sA:xa,sB:S-xa}; });
+      r=pickBest(a,b,rA,rB,around(exact), function(xa){ return {sA:xa,sB:S-xa}; });
     }
     if(!r) r={sA:0,sB:0};
     var sA=r.sA, sB=r.sB, totalR=sA+sB;
@@ -323,6 +367,9 @@
     // 最坏能有多坏, 由下面的"稳赚/最差 X 元"和各档明细负责说。
     var locked=worstOf(arr.filter(function(x){return !x.mid}));   // 缝的质量 -> ROI
     var worstAll=worstOf(arr);                                    // 真实最坏 -> 金额标签
+    // isOk: 最优分注下【分出输赢那两档】是否都非负 = 这个赔率组合到底有没有缝。
+    // 拿枚举出来的真值回答, 不用闭式解 —— 返水规则以后再改, 它自动仍然正确。
+    var isOk=locked>=0;
     var canLock=worstAll>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
     $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
@@ -369,9 +416,57 @@
     });
     recompute();
   });
-  ["a","b","rebA","rebB"].forEach(function(id){$(id).addEventListener("input",recompute)});
+  ["a","b"].forEach(function(id){$(id).addEventListener("input",recompute)});
+  // 费率插拔: 页面上改一次就记住 —— 以后升等级/换账号都不用改代码、不用重新部署
+  ["rebA","rebB"].forEach(function(id){
+    $(id).addEventListener("input",function(){
+      try{ localStorage.setItem("arbcalc."+id,this.value); }catch(e){}
+      recompute();
+    });
+  });
   $("total").addEventListener("input",function(){anchor="S"; recompute();});
   $("stakeA").addEventListener("input",function(){anchor="A"; recompute();});
   $("stakeB").addEventListener("input",function(){anchor="B"; recompute();});
+  // 出厂值 <- 上次填过的值(隐私模式/禁用存储时静默退回出厂值, 不能让它把页面拖死)
+  (function(){
+    function saved(k,dflt){
+      var v=null;
+      try{ v=localStorage.getItem(k); }catch(e){ v=null; }
+      return (v===null||v==="")?dflt:v;
+    }
+    $("rebA").value=saved("arbcalc.rebA",REBATE.defA);
+    $("rebB").value=saved("arbcalc.rebB",REBATE.defB);
+  })();
+  // 🔴 自检: 与 db/arb_pair.py(台账/雷达用的那份)同源。两边各写一份公式迟早分叉, 而分叉
+  //    那天【没有任何报错】—— 只是同一笔注两个工具给出不同的数, 两个看起来都合理, 要等
+  //    赛后对账才发现(2026-08-13 真发生过一次)。所以钉死几组真值, 对不上就红字喊出来。
+  //    真值全部出自 arb_pair.outcome_legs, 别手改成"看起来对"的数。
+  function selfTest(){
+    var R=0.02, S=0.0038, bad=[];
+    function chk(tag,got,want){
+      if(Math.abs(got-want)>0.005) bad.push(tag+": "+got.toFixed(2)+" 应为 "+want.toFixed(2));
+    }
+    // 🔴 用例是【合成数据】, 不是真实注单 —— 这个仓库是公开的, 下注记录不进公开仓库。
+    //    真值全部由 arb_pair.outcome_legs 算出, 三个分支各有专门用例(见每行注释)。
+    chk("常规/A赢",       one(1.90,2.10,1000, 905,R,S,1,"A"),  16.00);
+    chk("常规/B赢",       one(1.90,2.10,1000, 905,R,S,1,"B"),  18.50);
+    // 星空赔率<2 -> 净赢(950 x 0.85 = 807.5)<本金(950), 封顶那一支生效
+    chk("星空封顶/A赢",   one(2.20,1.85, 800, 950,R,S,1,"A"),  32.20);
+    chk("星空封顶/B赢",   one(2.20,1.85, 800, 950,R,S,1,"B"),  26.50);
+    // 皇冠赔率>2 -> 净赢(1000 x 1.30 = 1300)>本金(1000), 不封顶
+    chk("皇冠不封顶/A赢", one(2.30,1.80,1000,1280,R,S,1,"A"),  50.00);
+    // 整数线打中: 本金全退, 退回的钱不产生返水 -> 恒为 0(不是"白赚一份返水")
+    chk("整数线打中",     one(1.90,2.10,1000, 905,R,S,0,null),  0.00);
+    return bad;
+  }
+  (function(){
+    var bad=selfTest();
+    if(!bad.length) return;
+    var d=document.createElement("div");
+    d.style.cssText="background:#c0392b;color:#fff;padding:10px 12px;"+
+                    "font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap";
+    d.textContent="返水口径自检失败(与 arb_pair.py 对不上, 别拿这个结果下注):\n"+bad.join("\n");
+    document.body.insertBefore(d,document.body.firstChild);
+  })();
   recompute();
 </script>
