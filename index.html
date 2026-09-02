@@ -248,7 +248,10 @@
   //    旧算法显示 18.44/18.94, 真实到账 16.00/18.50。赢的那边返水更少, 差额随赔率和
   //    胜负翻转, 不是一个能打折修正的固定系数。
   var REBATE={
-    defA:2, defB:0.4,                           // 出厂费率 %(页面上改了就记住; 星空 2026-08-19 升级 0.38->0.4)
+    // 出厂费率 %(页面上改了就记住; 星空 0.38 -> 0.4(2026-08-19) -> 0.45(2026-08-26))
+    // 🔴 改出厂值必须同时 ver+1 —— 否则浏览器里存着的旧费率会一直盖住新出厂值,
+    //    页面看着完全正常, 只是在拿过期的费率算钱(这次 0.4->0.45 就是这么漏了一周)。
+    defA:2, defB:0.45, ver:2,
     base:function(side,atRisk,odd,isWin){
       if(atRisk<=0) return 0;
       if(!isWin) return atRisk;                 // 输 -> |净输赢| = 本金, 两家同
@@ -433,6 +436,16 @@
       var v=null;
       try{ v=localStorage.getItem(k); }catch(e){ v=null; }
       return (v===null||v==="")?dflt:v;
+    }
+    // 出厂费率换代时【一次性】丢掉存着的旧值(见 REBATE.ver 那段红字); 之后手改照旧记住。
+    var stale=false;
+    try{ stale = String(localStorage.getItem("arbcalc.rebVer")||"") !== String(REBATE.ver); }catch(e){ stale=false; }
+    if(stale){
+      try{
+        localStorage.removeItem("arbcalc.rebA");
+        localStorage.removeItem("arbcalc.rebB");
+        localStorage.setItem("arbcalc.rebVer",String(REBATE.ver));
+      }catch(e){}
     }
     $("rebA").value=saved("arbcalc.rebA",REBATE.defA);
     $("rebB").value=saved("arbcalc.rebB",REBATE.defB);
