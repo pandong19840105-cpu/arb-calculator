@@ -161,14 +161,14 @@
 
   <div class="cols">
     <div class="col">
-      <div class="band"><b>凯发 A</b><span class="echo" id="echoA">@—</span></div>
+      <div class="band"><b>BTI A</b><span class="echo" id="echoA">@—</span></div>
       <div class="body">
         <div class="k">赔率</div>
-        <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="凯发 A 边欧赔">
-        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="0.8" aria-label="凯发A返水比例"><span class="unit">%</span></div>
+        <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="BTI A 边欧赔">
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="0.4" aria-label="BTI A返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
         <div class="k">这边下 (可改)</div>
-        <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="凯发A下注额"><span class="unit">元</span></div>
+        <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="BTI A下注额"><span class="unit">元</span></div>
       </div>
     </div>
     <div class="col">
@@ -252,9 +252,10 @@
   var REBATE={
     // 出厂费率 %(页面上改了就记住; 星空 0.38 -> 0.4(2026-08-19) -> 0.45(2026-08-26) -> 0.38(2026-09-04);
     //   2026-09-11 起 A=凯发 0.8 / B=皇冠 2)
+    //   2026-10-04 起 A=fun88 BTI 0.4(BTI_REBATE_HISTORY); B=皇冠 2(arb_pair.REBATE_CROWN), 规则不变
     // 🔴 改出厂值必须同时 ver+1 —— 否则浏览器里存着的旧费率会一直盖住新出厂值,
     //    页面看着完全正常, 只是在拿过期的费率算钱(这次 0.4->0.45 就是这么漏了一周)。
-    defA:0.8, defB:2, ver:4,
+    defA:0.4, defB:2, ver:5,
     // 每边的平台规则: cap = 赢的那边基数封顶本金 / floor = 逐笔向下取整
     RULE:{A:{cap:true, floor:true},     // 凯发(同星空)
           B:{cap:false, floor:false}},  // 皇冠
