@@ -255,7 +255,8 @@
     //   2026-10-04 起 A=fun88 BTI 0.4(BTI_REBATE_HISTORY); B=皇冠 2(arb_pair.REBATE_CROWN), 规则不变
     // 🔴 改出厂值必须同时 ver+1 —— 否则浏览器里存着的旧费率会一直盖住新出厂值,
     //    页面看着完全正常, 只是在拿过期的费率算钱(这次 0.4->0.45 就是这么漏了一周)。
-    defA:0.4, defB:2, ver:5,
+    //   2026-10-17 起 B=皇冠 3(arb_pair.REBATE_HISTORY 新增行)
+    defA:0.4, defB:3, ver:6,
     // 每边的平台规则: cap = 赢的那边基数封顶本金 / floor = 逐笔向下取整
     RULE:{A:{cap:true, floor:true},     // 凯发(同星空)
           B:{cap:false, floor:false}},  // 皇冠
