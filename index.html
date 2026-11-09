@@ -95,6 +95,8 @@
   .vk{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--cap)}
   .vv{font-size:13px; font-weight:900; font-family:var(--fn); color:var(--ink2)}
   .concl{text-align:center; font-size:12.5px; font-weight:700; color:var(--ink2)}
+  /* 🔀 2026-11-10 用户: 结论/缝 这种整句永远只占一行, 放不下就按宽度缩字(fitOne), 绝不折行 */
+  .concl,.lock{white-space:nowrap; overflow:hidden}
   /* 盘口类型: 决定这一注到底有几种结果。半线两种, 整数线/四分线各三种 */
   .segWrap{display:flex; flex-direction:column; gap:6px}
   .seg{display:flex; gap:5px; background:rgba(45,38,24,.05); padding:4px; border-radius:13px}
@@ -429,7 +431,19 @@
       : worstAll===0
       ? "最差是打中那档 = 本金全退,不赚不亏(白跑一趟) · 其余档最高 "+money(worstAll+spread)
       : "有一档为负 = 没锁定,别下 ✗　最差 "+money(worstAll);
+    fitAll();
   }
+  // 一行装不下就缩字: 先回到样式表的字号, 再按 0.5px 往下减到不溢出(最小 7px)。
+  //    量的是真实渲染宽度(scrollWidth), 不按字数估 —— 手机/电脑、中英混排都一样准。
+  function fitOne(el){
+    if(!el) return;
+    el.style.fontSize="";
+    var fs=parseFloat(getComputedStyle(el).fontSize)||12;
+    var n=0;
+    while(el.scrollWidth>el.clientWidth+1 && fs>7 && n<60){ fs-=0.5; el.style.fontSize=fs+"px"; n++; }
+  }
+  function fitAll(){ fitOne($("concl")); fitOne($("lock")); }
+  window.addEventListener("resize",fitAll);
   // 盘口类型: 直接决定有几种结果, 所以改它必须重算
   $("seg").addEventListener("click",function(e){
     var btn=e.target.closest("button"); if(!btn) return;
