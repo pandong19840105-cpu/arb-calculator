@@ -41,8 +41,9 @@
 
   .hero{position:relative; overflow:hidden; border-radius:18px; padding:16px 18px; color:#fff}
   .hero::after{content:""; position:absolute; top:-42px; right:-30px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.09)}
-  .hero.ok{background:linear-gradient(145deg,#12b5c0,#0a828c); box-shadow:0 18px 32px -14px rgba(10,130,140,.6)}
-  .hero.no{background:linear-gradient(145deg,#e8492f,#c22a18); box-shadow:0 18px 32px -14px rgba(194,42,24,.65)}
+  /* 🎨 2026-11-10 用户: 盈利绿 / 亏损红, 跟雷达面板同一套色(面板 --good #0f8f5c / --bad #bd4f38) */
+  .hero.ok{background:linear-gradient(145deg,#17a96d,#0f8f5c); box-shadow:0 18px 32px -14px rgba(15,143,92,.6)}
+  .hero.no{background:linear-gradient(145deg,#d2654c,#bd4f38); box-shadow:0 18px 32px -14px rgba(189,79,56,.65)}
   .hero.na{background:#efe9db; box-shadow:none; color:var(--cap)}
   .heroTop{position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:10px}
   .hlab{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.72); margin-bottom:3px}
@@ -78,8 +79,10 @@
   .pill input{width:112px; font-size:22px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums; background:transparent; border:0; text-align:center; color:var(--ink); outline:0}
   .pill .yuan{font-size:13px; font-weight:800; color:var(--cap3)}
   .lockAmt{flex-shrink:0; white-space:nowrap; border-radius:12px; padding:9px 14px; font-size:14px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums}
-  .lockAmt.ok{background:rgba(10,130,140,.12); color:#0a828c}
-  .lockAmt.no{background:rgba(194,42,24,.12); color:#c22a18}
+  .lockAmt.ok{background:rgba(15,143,92,.12); color:#0f8f5c}
+  .lockAmt.no{background:rgba(189,79,56,.12); color:#bd4f38}
+  .lockAmt.zero{background:rgba(45,38,24,.06); color:var(--ink2)}
+  .vv.pos{color:#0f8f5c} .vv.neg{color:#bd4f38}
   .fxRow{display:flex; align-items:center; gap:7px; padding:0 4px}
   .fxRow .k{flex-shrink:0}
   .fxRow .reb{flex:0 0 96px}
@@ -411,7 +414,7 @@
     $("margin").textContent=pct(totalR ? locked/totalR*100 : 0);
     $("lock").textContent="缝 "+(marginPct>=0?"+":"−")+Math.abs(marginPct).toFixed(2)+"%  · 不含返水";
     // 金额标签说【真实最坏】(含走盘那档), ROI 说【缝有多肥】—— 两个数各管一件事
-    $("lockAmt").className="lockAmt "+(worstAll>=0?"ok":"no");
+    $("lockAmt").className="lockAmt "+(worstAll>0.005?"ok":worstAll<-0.005?"no":"zero");
     $("lockAmt").textContent=(worstAll>0?"稳赚 ":worstAll===0?"最差 ":"最差 ")+money(worstAll)+" 元";
     $("echoA").textContent="@"+a; $("echoB").textContent="@"+b;
     // 验证区按实际档数渲染(2 或 3 格), 少算一档就等于把风险藏起来
@@ -419,7 +422,7 @@
     for(var i=0;i<arr.length;i++){
       var it=arr[i];
       html+='<div class="vhalf'+(it.mid?" mid":"")+'"><span class="vk">'+it.k+
-            '</span><span class="vv">净 '+money(it.v)+'</span></div>';
+            '</span><span class="vv'+(it.v>0.005?" pos":it.v<-0.005?" neg":"")+'">净 '+money(it.v)+'</span></div>';
     }
     $("vrow").innerHTML=html;
     $("vt").textContent="验证 · "+(arr.length===3?"三":"两")+"种结果都得为正";
