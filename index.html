@@ -157,7 +157,7 @@
 
   <section class="hero" id="hero">
     <div class="heroTop">
-      <div><div class="hlab">缝口 Spread</div><div class="verdict" id="verdict">—</div></div>
+      <div><div class="hlab">ROI · 含返水</div><div class="verdict" id="verdict">—</div></div>
       <div class="margin num" id="margin">—</div>
     </div>
     <div class="lock" id="lock"></div>
@@ -200,8 +200,8 @@
 
   <div class="segWrap">
     <div class="seg" id="seg" role="group" aria-label="盘口类型">
-      <button type="button" data-mode="half" class="on">半线<small>带 .5<br>1.5、2.5、0.5</small></button>
       <button type="button" data-mode="int">整数线<small>光整数<br>1、2、3、0</small></button>
+      <button type="button" data-mode="half" class="on">半线<small>带 .5<br>1.5、2.5、0.5</small></button>
       <button type="button" data-mode="q">四分线<small>带斜杠<br>0/0.5、1.5/2</small></button>
     </div>
     <div class="whoWrap" id="whoWrap" hidden>
@@ -404,9 +404,10 @@
     var isOk=locked>=0;
     var canLock=worstAll>=0;
     hero.className="hero "+((isOk&&canLock)?"ok":"no");
-    $("verdict").textContent = !isOk ? "无缝 · 别下" : (canLock ? "有缝 · 可下" : "会亏 · 改分注");
-    $("margin").textContent=(marginPct>=0?"+":"−")+Math.abs(marginPct).toFixed(2)+"%";
-    $("lock").textContent="ROI "+pct(totalR ? locked/totalR*100 : 0);
+    $("verdict").textContent = !isOk ? "会亏 · 别下" : (canLock ? "稳赚 · 可下" : "会亏 · 改分注");
+    // 🔀 2026-11-10 用户: 与雷达面板计算器一致 —— 大字 = 含返水 ROI(真会拿到的), 缝(纯赔率, 不含返水)放下面那行
+    $("margin").textContent=pct(totalR ? locked/totalR*100 : 0);
+    $("lock").textContent="缝 "+(marginPct>=0?"+":"−")+Math.abs(marginPct).toFixed(2)+"%  · 不含返水";
     // 金额标签说【真实最坏】(含走盘那档), ROI 说【缝有多肥】—— 两个数各管一件事
     $("lockAmt").className="lockAmt "+(worstAll>=0?"ok":"no");
     $("lockAmt").textContent=(worstAll>0?"稳赚 ":worstAll===0?"最差 ":"最差 ")+money(worstAll)+" 元";
