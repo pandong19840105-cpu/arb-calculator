@@ -80,6 +80,11 @@
   .lockAmt{flex-shrink:0; white-space:nowrap; border-radius:12px; padding:9px 14px; font-size:14px; font-weight:900; font-family:var(--fn); font-variant-numeric:tabular-nums}
   .lockAmt.ok{background:rgba(10,130,140,.12); color:#0a828c}
   .lockAmt.no{background:rgba(194,42,24,.12); color:#c22a18}
+  .fxRow{display:flex; align-items:center; gap:7px; padding:0 4px}
+  .fxRow .k{flex-shrink:0}
+  .fxRow .reb{flex:0 0 96px}
+  .fxEq{font-size:12px; font-weight:800; color:var(--cap2); flex-shrink:0}
+  .fxSrc{font-size:10px; color:var(--cap); margin-left:auto; white-space:nowrap}
 
 
   .verify{border-top:2px dashed rgba(45,38,24,.13); padding-top:12px; display:flex; flex-direction:column; gap:9px}
@@ -146,7 +151,7 @@
 
 <main class="card" role="main">
   <div class="hdr">
-    <h1>套利计算器</h1>
+    <h1>平博 × 皇冠</h1>
     <div class="live"><span class="dot"></span><span>实时 Live</span></div>
   </div>
 
@@ -161,33 +166,36 @@
 
   <div class="cols">
     <div class="col">
-      <div class="band"><b>BTI A</b><span class="echo" id="echoA">@—</span></div>
+      <div class="band"><b>平博</b><span class="echo" id="echoA">@—</span></div>
       <div class="body">
         <div class="k">赔率</div>
-        <input class="odds" id="a" inputmode="decimal" step="0.01" value="1.76" aria-label="BTI A 边欧赔">
-        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="0.4" aria-label="BTI A返水比例"><span class="unit">%</span></div>
+        <input class="odds" id="a" inputmode="decimal" step="0.01" value="2.15" aria-label="平博欧赔">
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebA" inputmode="decimal" step="0.1" value="0" aria-label="平博返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
-        <div class="k">这边下 (可改)</div>
-        <div class="stakeRow"><input class="stake" id="stakeA" inputmode="numeric" step="10" aria-label="BTI A下注额"><span class="unit">元</span></div>
+        <div class="k">这边下 · 欧元 (可改)</div>
+        <div class="stakeRow"><input class="stake" id="stakeA" inputmode="decimal" step="0.01" aria-label="平博下注额(欧元)"><span class="unit">€</span></div>
+        <div class="k" id="cnyA"></div>
       </div>
     </div>
     <div class="col">
-      <div class="band"><b>皇冠 B</b><span class="echo" id="echoB">@—</span></div>
+      <div class="band"><b>皇冠</b><span class="echo" id="echoB">@—</span></div>
       <div class="body">
         <div class="k">赔率</div>
-        <input class="odds" id="b" inputmode="decimal" step="0.01" value="2.36" aria-label="皇冠 B 边欧赔">
-        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebB" inputmode="decimal" step="0.1" value="2" aria-label="皇冠B返水比例"><span class="unit">%</span></div>
+        <input class="odds" id="b" inputmode="decimal" step="0.01" value="1.85" aria-label="皇冠欧赔">
+        <div class="rebRow"><span class="k">返水</span><input class="reb" id="rebB" inputmode="decimal" step="0.1" value="3" aria-label="皇冠返水比例"><span class="unit">%</span></div>
         <div class="div"></div>
-        <div class="k">这边下 (可改)</div>
-        <div class="stakeRow"><input class="stake" id="stakeB" inputmode="numeric" step="10" aria-label="皇冠B下注额"><span class="unit">元</span></div>
+        <div class="k">这边下 · 人民币 (可改)</div>
+        <div class="stakeRow"><input class="stake" id="stakeB" inputmode="numeric" step="10" value="1000" aria-label="皇冠下注额"><span class="unit">元</span></div>
+        <div class="k">&nbsp;</div>
       </div>
     </div>
   </div>
 
   <div class="totalWrap">
-    <label class="pill"><span class="k">总投注</span><input id="total" inputmode="numeric" step="10" value="2000" class="num" aria-label="总投注额"><span class="yuan">元</span></label>
+    <label class="pill"><span class="k">总投注</span><input id="total" inputmode="numeric" step="10" class="num" aria-label="总投注额"><span class="yuan">元</span></label>
     <div class="lockAmt" id="lockAmt"></div>
   </div>
+  <div class="fxRow"><span class="k">汇率</span><span class="fxEq">1 € =</span><input class="reb" id="fx" inputmode="decimal" step="0.0001" aria-label="欧元兑人民币汇率"><span class="unit">元</span><span class="fxSrc" id="fxSrc"></span></div>
 
 
   <div class="segWrap">
@@ -199,8 +207,8 @@
     <div class="whoWrap" id="whoWrap" hidden>
       <span class="whoLab">打中那个整数时,哪边是赢的一方?</span>
       <div class="who" id="who" role="group" aria-label="四分线走盘档谁半赢">
-        <button type="button" data-who="A" class="on">A 赢</button>
-        <button type="button" data-who="B">B 赢</button>
+        <button type="button" data-who="A" class="on">平博赢</button>
+        <button type="button" data-who="B">皇冠赢</button>
       </div>
     </div>
     <div class="spread" id="qHint" hidden>押<b>大</b>的那边算赢 · 让球则是<b>受让</b>的那边 —— 赢的赢一半,输的输一半</div>
@@ -217,7 +225,10 @@
   var $=function(id){return document.getElementById(id)};
   var money=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(1)};
   var pct=function(n){return (n>=0?"+":"−")+Math.abs(n).toFixed(2)+"%"};
-  var anchor="S";   // "S"=总投注驱动 | "A"=凯发A下注额驱动 | "B"=皇冠B下注额驱动, 三选一由最后编辑的框决定
+  // 🔀 2026-11-10: 左边 A = 平博(账户欧元, 返水 0), 右边 B = 皇冠(人民币, 返水 3%), 默认皇冠下 1000、平博跟。
+  //    平博腿在页面上一律【欧元】(与雷达面板计算器同口径), 内部算术全在人民币: sA(元) = 欧元 x 汇率。
+  var anchor="B";   // "S"=总投注驱动 | "A"=平博下注额(欧元)驱动 | "B"=皇冠下注额驱动, 三选一由最后编辑的框决定
+  var FX_DEFAULT=7.45;   // 拿不到实时汇率时的出厂值(页面上可改, 改了记住)
   var mode="half";  // half=半线(两种结果) | int=整数线(打中全退) | q=四分线(打中半退)
   var qWho="A";     // 四分线打中那个整数时, 哪边半赢(押"大"/受让的那边)
 
@@ -256,9 +267,10 @@
     // 🔴 改出厂值必须同时 ver+1 —— 否则浏览器里存着的旧费率会一直盖住新出厂值,
     //    页面看着完全正常, 只是在拿过期的费率算钱(这次 0.4->0.45 就是这么漏了一周)。
     //   2026-10-17 起 B=皇冠 3(arb_pair.REBATE_HISTORY 新增行)
-    defA:0.4, defB:3, ver:6,
+    //   2026-11-10 起 A=平博 0(平博无返水), B=皇冠 3; ver 7 丢掉浏览器里存着的凯发费率
+    defA:0, defB:3, ver:7,
     // 每边的平台规则: cap = 赢的那边基数封顶本金 / floor = 逐笔向下取整
-    RULE:{A:{cap:true, floor:true},     // 凯发(同星空)
+    RULE:{A:{cap:false, floor:false},   // 平博(费率 0, 规则形同虚设; 页面上手填费率时按不封顶算)
           B:{cap:false, floor:false}},  // 皇冠
     base:function(side,atRisk,odd,isWin){
       if(atRisk<=0) return 0;
@@ -283,14 +295,14 @@
     return back-(sA+sB)+reb;
   }
   function nets(a,b,sA,sB,rA,rB){
-    var out=[{k:"A 边赢", v:one(a,b,sA,sB,rA,rB,1,"A")}];
+    var out=[{k:"平博赢", v:one(a,b,sA,sB,rA,rB,1,"A")}];
     if(mode==="int"){
       out.push({k:"打中 · 全退", v:one(a,b,sA,sB,rA,rB,0,null), mid:true});
     }else if(mode==="q"){
       out.push({k:"打中 · 输赢减半",
                 v:one(a,b,sA,sB,rA,rB,0.5,qWho), mid:true});
     }
-    out.push({k:"B 边赢", v:one(a,b,sA,sB,rA,rB,1,"B")});
+    out.push({k:"皇冠赢", v:one(a,b,sA,sB,rA,rB,1,"B")});
     return out;
   }
   function worstOf(arr){
@@ -328,7 +340,8 @@
     var a=parseFloat($("a").value), b=parseFloat($("b").value);
     var rA=(parseFloat($("rebA").value)||0)/100, rB=(parseFloat($("rebB").value)||0)/100;
     var hero=$("hero");
-    var oddsOk=isFinite(a)&&a>1&&isFinite(b)&&b>1;
+    var fx=parseFloat($("fx").value);
+    var oddsOk=isFinite(a)&&a>1&&isFinite(b)&&b>1&&isFinite(fx)&&fx>0;
     var anchorVal = anchor==="A" ? parseFloat($("stakeA").value)
                   : anchor==="B" ? parseFloat($("stakeB").value)
                   : parseFloat($("total").value);
@@ -336,10 +349,12 @@
     if(!valid){
       hero.className="hero na";
       $("verdict").parentElement.hidden=true; $("margin").hidden=true; $("lock").hidden=true; $("naTxt").hidden=false;
+      $("naTxt").textContent=(isFinite(fx)&&fx>0)?"请输入两边欧赔":"请填欧元汇率";
       $("lockAmt").hidden=true;
       $("echoA").textContent="@—"; $("echoB").textContent="@—";
       if(anchor!=="A")$("stakeA").value=""; if(anchor!=="B")$("stakeB").value="";
       if(anchor!=="S")$("total").value="";
+      $("cnyA").textContent="";
       $("vrow").innerHTML=""; $("concl").textContent="";
       return;
     }
@@ -351,26 +366,32 @@
     //    而再推一条新的闭式解, 等于又多一份得跟着规则变的公式。
     // 三框互联(保底最大): 谁被改就固定谁的整数值, 另两个自动求最优解。
     // 🔴 最优比例不再恒等于"两边赔付相等" —— 赢的那边返水少, 最优点会偏开一点(见 around)
+    // 💶 平博腿按【欧元到分】枚举(平博限额本身就是小数欧元), 皇冠腿按整数元枚举; 算术一律折成人民币。
     var r, exact;
+    var eurCny=function(cents){ return cents/100*fx; };   // 欧分 -> 人民币
     if(anchor==="A"){
-      var A=Math.round(parseFloat($("stakeA").value)); if(!isFinite(A))A=0;
+      var Ae=Math.round(parseFloat($("stakeA").value)*100); if(!isFinite(Ae))Ae=0;
+      var A=eurCny(Ae);
       exact=A*a/b;
       r=pickBest(a,b,rA,rB,around(exact), function(xb){ return {sA:A,sB:xb}; });
     }else if(anchor==="B"){
       var B=Math.round(parseFloat($("stakeB").value)); if(!isFinite(B))B=0;
-      exact=B*b/a;
-      r=pickBest(a,b,rA,rB,around(exact), function(xa){ return {sA:xa,sB:B}; });
+      exact=B*b/a/fx*100;                                 // 平博该下多少欧分
+      r=pickBest(a,b,rA,rB,around(exact), function(c){ return {sA:eurCny(c),sB:B}; });
     }else{
       var S=Math.round(parseFloat($("total").value));
-      exact=S*(1/a)/invSum;
-      r=pickBest(a,b,rA,rB,around(exact), function(xa){ return {sA:xa,sB:S-xa}; });
+      exact=S*(1/b)/invSum;                               // 皇冠该下多少元, 平博拿剩下的折成欧元到分
+      r=pickBest(a,b,rA,rB,around(exact), function(xb){
+        return {sA:eurCny(Math.round((S-xb)/fx*100)),sB:xb};
+      });
     }
     if(!r) r={sA:0,sB:0};
     var sA=r.sA, sB=r.sB, totalR=sA+sB;
     // 写回三个框(正在被编辑的那个不覆盖, 免得打断输入)
-    if(anchor!=="A") $("stakeA").value=sA;
+    if(anchor!=="A") $("stakeA").value=(sA/fx).toFixed(2);
     if(anchor!=="B") $("stakeB").value=sB;
-    if(anchor!=="S") $("total").value=totalR;
+    if(anchor!=="S") $("total").value=Math.round(totalR);
+    $("cnyA").textContent="折合 ¥"+sA.toFixed(2);
     var arr=nets(a,b,sA,sB,rA,rB);
     // 🔴 ROI 只看【分出输赢】那两档 —— 它衡量的是"这个缝有多肥", 而走盘只是"结果的一种
     // 可能"(整数线=不输不赢, 四分线=输赢减半), 两回事。把走盘算进 ROI 会让同一个缝在不同
@@ -457,12 +478,41 @@
     }
     $("rebA").value=saved("arbcalc.rebA",REBATE.defA);
     $("rebB").value=saved("arbcalc.rebB",REBATE.defB);
+    $("fx").value=saved("arbcalc.fx",FX_DEFAULT);
+    $("fxSrc").textContent=saved("arbcalc.fxSrc","出厂值");
+  })();
+  // 💶 汇率: 手改 = 记住并以手填为准(本次打开不再被实时值覆盖); 没手改过就拉一次实时 EUR->CNY
+  //    (与雷达 db/fx_rate.py 同一个源 open.er-api.com)。拉不到 = 沿用上次的值, 旁边写着是哪来的。
+  var fxManual=false;
+  $("fx").addEventListener("input",function(){
+    fxManual=true;
+    try{ localStorage.setItem("arbcalc.fx",this.value); localStorage.setItem("arbcalc.fxSrc","手填"); }catch(e){}
+    $("fxSrc").textContent="手填";
+    recompute();
+  });
+  (function(){
+    if(!window.fetch) return;
+    fetch("https://open.er-api.com/v6/latest/EUR").then(function(r){return r.json()}).then(function(j){
+      var v=j&&j.rates&&j.rates.CNY;
+      if(fxManual||!(v>0)) return;
+      var d=new Date(), tag="实时 "+(d.getMonth()+1)+"-"+d.getDate();
+      $("fx").value=(+v).toFixed(4); $("fxSrc").textContent=tag;
+      try{ localStorage.setItem("arbcalc.fx",$("fx").value); localStorage.setItem("arbcalc.fxSrc",tag); }catch(e){}
+      recompute();
+    }).catch(function(){});
   })();
   // 🔴 自检: 与 db/arb_pair.py(台账/雷达用的那份)同源。两边各写一份公式迟早分叉, 而分叉
   //    那天【没有任何报错】—— 只是同一笔注两个工具给出不同的数, 两个看起来都合理, 要等
   //    赛后对账才发现(2026-08-13 真发生过一次)。所以钉死几组真值, 对不上就红字喊出来。
   //    真值全部出自 arb_pair.outcome_legs, 别手改成"看起来对"的数。
   function selfTest(){
+    // 🔀 2026-11-10 起 A 边是平博(不封顶不抹零), 但下面的真值是按"A=封顶+抹零"那条腿算的 ——
+    //    自检期间临时把 A 的规则换回去, 跑完还原。验的是公式本身, 与 A 现在坐的是哪家无关。
+    var keepA=REBATE.RULE.A;
+    REBATE.RULE.A={cap:true, floor:true};
+    try{ return selfTestBody(); } finally { REBATE.RULE.A=keepA; }
+  }
+  function selfTestBody(){
     var R=0.02, S=0.0038, bad=[];
     function chk(tag,got,want){
       if(Math.abs(got-want)>0.005) bad.push(tag+": "+got.toFixed(2)+" 应为 "+want.toFixed(2));
