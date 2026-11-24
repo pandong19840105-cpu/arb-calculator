@@ -561,3 +561,34 @@
   })();
   recompute();
 </script>
+<script>
+  // 窄屏触屏手机(如 iPhone SE2 宽 375)竖屏: 整页按 430 宽排版再 CSS zoom 缩小, 高度也塞进一屏。
+  // 宽 >=430(15 Pro Max 等)/ 非触屏(电脑)/ 横屏一律不进, 原样显示。只在宽度或方向变时重算(键盘/地址栏伸缩不动)。
+  (function(){
+    var LAYOUT_W=430, de=document.documentElement, body=document.body, lastKey="";
+    function clear(){ de.style.zoom=""; body.style.minHeight=""; de.removeAttribute("data-fit"); }
+    function fit(){
+      var w=window.innerWidth||0, h=window.innerHeight||0;
+      var key=w+"x"+(h>w?"p":"l");
+      if(key===lastKey) return;
+      lastKey=key;
+      var touch=!!(window.matchMedia&&window.matchMedia("(pointer: coarse)").matches);
+      clear();
+      if(!(touch && h>w && w>0 && w<LAYOUT_W)) return;
+      var z=w/LAYOUT_W;
+      de.style.zoom=String(z);
+      var card=document.querySelector(".card");
+      if(card){
+        var bottom=card.getBoundingClientRect().bottom+window.scrollY+12*z;
+        if(bottom>h) z=z*h/bottom;
+      }
+      z=Math.max(0.6,Math.round(z*1000)/1000);
+      de.style.zoom=String(z);
+      body.style.minHeight="calc(100dvh / "+z+")";
+      de.setAttribute("data-fit",String(z));
+    }
+    window.addEventListener("resize",fit);
+    window.addEventListener("orientationchange",function(){ setTimeout(fit,300); });
+    fit();
+  })();
+</script>
