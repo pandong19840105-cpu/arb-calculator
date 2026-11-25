@@ -337,9 +337,25 @@
       if(!p||p.sA<0||p.sB<0) continue;
       var real=nets(a,b,p.sA,p.sB,rA,rB).filter(function(x){return !x.mid});
       var lk=worstOf(real);
-      if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk};
+      if(!best||lk>best.lk) best={sA:p.sA,sB:p.sB,lk:lk,c:cands[i]};
     }
     return best;
+  }
+  // 🔴 2026-11-26 平博 1.303 × 皇冠 4.30(皇冠 3% 返水)、皇冠填 1000: 平博腿按【欧分】枚举时 around 的 ±60 只有
+  //    ±0.60 欧元, 而返水把最优点推开了 7 欧元多 -> 最优值落在窗外, 挑出来的是窗口边上那个(€452.15: 平博赢 +31.3 /
+  //    皇冠赢 +94.5, 两边不平)。最坏值对分注是"先升后降"的, 所以: 最好的那个落在窗口边上 = 真正的最优还在外面,
+  //    以它为中心再扫一窗, 直到落在窗内(最多 60 次)。正确的是 €458.79: 两边 +45.96 / +45.99。
+  function pickBestWide(a,b,rA,rB,center,mk){
+    var c=Math.round(center), r=null;
+    for(var it=0;it<60;it++){
+      var cands=around(c), got=pickBest(a,b,rA,rB,cands,mk);
+      if(!got) return r;
+      r=got;
+      if(got.c!==cands[0]&&got.c!==cands[cands.length-1]) break;
+      if(got.c===c) break;
+      c=got.c;
+    }
+    return r;
   }
   function recompute(){
     var a=parseFloat($("a").value), b=parseFloat($("b").value);
@@ -378,15 +394,15 @@
       var Ae=Math.round(parseFloat($("stakeA").value)*100); if(!isFinite(Ae))Ae=0;
       var A=eurCny(Ae);
       exact=A*a/b;
-      r=pickBest(a,b,rA,rB,around(exact), function(xb){ return {sA:A,sB:xb}; });
+      r=pickBestWide(a,b,rA,rB,exact, function(xb){ return {sA:A,sB:xb}; });
     }else if(anchor==="B"){
       var B=Math.round(parseFloat($("stakeB").value)); if(!isFinite(B))B=0;
       exact=B*b/a/fx*100;                                 // 平博该下多少欧分
-      r=pickBest(a,b,rA,rB,around(exact), function(c){ return {sA:eurCny(c),sB:B}; });
+      r=pickBestWide(a,b,rA,rB,exact, function(c){ return {sA:eurCny(c),sB:B}; });
     }else{
       var S=Math.round(parseFloat($("total").value));
       exact=S*(1/b)/invSum;                               // 皇冠该下多少元, 平博拿剩下的折成欧元到分
-      r=pickBest(a,b,rA,rB,around(exact), function(xb){
+      r=pickBestWide(a,b,rA,rB,exact, function(xb){
         return {sA:eurCny(Math.round((S-xb)/fx*100)),sB:xb};
       });
     }
